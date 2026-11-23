@@ -1,0 +1,465 @@
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>মেস বাজার ও হিসাব</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- বাংলা ফন্ট -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Siyam Rupali', sans-serif;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            font-family: 'Siyam Rupali', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="pb-10">
+
+    <!-- ছোট হেডার (তারিখ বাদ) -->
+    <div class="bg-gradient-to-r from-emerald-800 to-teal-700 text-white px-3 py-2 shadow-md sticky top-0 z-20">
+        <div class="max-w-2xl mx-auto flex justify-between items-center gap-2">
+            <h1 class="text-lg font-bold leading-tight">মেস বাজার</h1>
+
+            <button onclick="fetchData()"
+                class="shrink-0 bg-white/15 hover:bg-white/25 text-white px-3 py-1 rounded-lg text-xs font-semibold">
+                ↻ রিফ্রেশ
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-2xl mx-auto p-3 space-y-4">
+
+        <!-- মেস বাজারের পথচলা -->
+        <div class="bg-white rounded-xl px-3 py-2 shadow-sm border border-emerald-200">
+            <div class="flex items-center justify-between gap-1 whitespace-nowrap">
+                <span class="text-xs font-bold text-emerald-800 shrink-0">
+                    মেস বাজারের পথচলা
+                </span>
+
+                <div class="flex items-center gap-1 text-xs font-extrabold text-emerald-700">
+                    <span id="cdYears">0</span>
+                    <span>বছর</span>
+                    <span class="text-emerald-300">·</span>
+                    <span id="cdMonths">0</span>
+                    <span>মাস</span>
+                    <span class="text-emerald-300">·</span>
+                    <span id="cdDays">0</span>
+                    <span>দিন</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- সপ্তাহ নির্বাচন ও মোট হিসাব -->
+        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-200">
+
+            <div class="flex flex-wrap justify-between items-center gap-2 pb-3 border-b border-gray-100">
+                <div>
+                    <label class="text-xs text-gray-500 block">সপ্তাহ নির্বাচন করুন</label>
+
+                    <select id="weekFilter" onchange="renderDashboard()"
+                        class="mt-0.5 border border-emerald-300 rounded-lg px-3 py-1.5 text-sm font-bold text-emerald-900 bg-emerald-50 focus:outline-none">
+                        <option value="ALL">সকল সপ্তাহ</option>
+                    </select>
+                </div>
+
+                <!-- তারিখ ও বার -->
+                <div class="text-right">
+                    <span id="dateRangeBadge"
+                        class="inline-block bg-blue-50 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-md border border-blue-100">
+                        তারিখ লোড হচ্ছে...
+                    </span>
+
+                    <p id="dayRangeText" class="text-xs font-semibold text-gray-600 mt-1">
+                        বার লোড হচ্ছে...
+                    </p>
+                </div>
+            </div>
+
+            <!-- মোট হিসাব -->
+            <div class="grid grid-cols-3 gap-2 text-center mt-3">
+                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <p class="text-xs text-slate-500 font-medium">মোট বাজার</p>
+                    <p class="text-base font-bold text-slate-800 mt-0.5" id="totalExpense">0.00</p>
+                </div>
+
+                <div class="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100">
+                    <p class="text-xs text-emerald-600 font-medium">মোট জমা</p>
+                    <p class="text-base font-bold text-emerald-800 mt-0.5" id="totalDeposit">0.00</p>
+                </div>
+
+                <div class="bg-amber-50 p-2.5 rounded-xl border border-amber-100">
+                    <p class="text-xs text-amber-700 font-medium">জনপ্রতি ভাগ</p>
+                    <p class="text-base font-bold text-amber-800 mt-0.5" id="perHead">0.00</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- সদস্যদের ব্যক্তিগত হিসাব -->
+        <div>
+            <div class="flex justify-between items-center mb-2 px-1">
+                <h2 class="font-bold text-gray-800 text-sm">সদস্যদের ব্যক্তিগত হিসাব</h2>
+
+                <span class="text-[11px] text-gray-500">
+                    জনপ্রতি ভাগ: <b id="perHeadSmall">0.00</b>
+                </span>
+            </div>
+
+            <div id="memberCardsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- সদস্যদের কার্ড এখানে আসবে -->
+            </div>
+        </div>
+
+        <!-- বাজারের বিস্তারিত তালিকা -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+
+            <div class="bg-gray-50 px-3 py-2.5 border-b border-gray-200 flex justify-between items-center gap-2">
+                <h2 class="font-bold text-gray-800 text-sm">বাজারের বিস্তারিত তালিকা</h2>
+
+                <select id="memberFilter" onchange="renderDashboard()"
+                    class="text-xs font-semibold border border-gray-300 rounded-lg px-2 py-1.5 bg-white text-gray-700">
+                    <option value="ALL">সকল সদস্য</option>
+                    <option value="নাঈম">নাঈম</option>
+                    <option value="মাসুম">মাসুম</option>
+                    <option value="শিপন">শিপন</option>
+                    <option value="আলিফ">আলিফ</option>
+                </select>
+            </div>
+
+            <div id="transactionList" class="divide-y divide-gray-100">
+                <p class="text-center py-6 text-gray-400 text-sm">ডাটা লোড হচ্ছে...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtDuQ23-NotwjOfkmQelaTktXqaeQoDpMrLAS8iQKCfoi3VkcKsiFMT-QHsrK5fqPnTQ/exec";
+
+        const MEMBERS = ["নাঈম", "মাসুম", "শিপন", "আলিফ"];
+
+        const BANGLA_DAYS = [
+            "রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার",
+            "বৃহস্পতিবার", "শুক্রবার", "শনিবার"
+        ];
+
+        // মেস শুরুর তারিখ: ১৩ নভেম্বর ২০২৬
+        const START_DATE = new Date(2026, 10, 13);
+
+        let allTransactions = [];
+
+        // =========================
+        // মেস বাজারের পথচলা
+        // =========================
+        function updateCountdown() {
+            const now = new Date();
+
+            const start = new Date(
+                START_DATE.getFullYear(),
+                START_DATE.getMonth(),
+                START_DATE.getDate()
+            );
+
+            const today = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate()
+            );
+
+            if (today < start) {
+                document.getElementById('cdYears').innerText = "0";
+                document.getElementById('cdMonths').innerText = "0";
+                document.getElementById('cdDays').innerText = "0";
+                return;
+            }
+
+            let years = today.getFullYear() - start.getFullYear();
+            let months = today.getMonth() - start.getMonth();
+            let days = today.getDate() - start.getDate();
+
+            if (days < 0) {
+                months--;
+
+                const prevMonthLastDay = new Date(
+                    today.getFullYear(),
+                    today.getMonth(),
+                    0
+                ).getDate();
+
+                days += prevMonthLastDay;
+            }
+
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            document.getElementById('cdYears').innerText = years;
+            document.getElementById('cdMonths').innerText = months;
+            document.getElementById('cdDays').innerText = days;
+        }
+
+        // =========================
+        // তারিখ ফরম্যাট
+        // =========================
+        function parseDateInfo(dateStr) {
+            if (!dateStr) {
+                return {
+                    formatted: "",
+                    dayName: ""
+                };
+            }
+
+            let d = new Date(dateStr);
+
+            if (isNaN(d.getTime())) {
+                const parts = String(dateStr).split(/[-/]/);
+
+                if (parts.length === 3 && parts[2].length === 4) {
+                    d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                }
+            }
+
+            if (isNaN(d.getTime())) {
+                return {
+                    formatted: dateStr,
+                    dayName: ""
+                };
+            }
+
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            const dayName = BANGLA_DAYS[d.getDay()];
+
+            return {
+                dateObj: d,
+                formatted: `${day}-${month}-${year}`,
+                dayName: dayName
+            };
+        }
+
+        // =========================
+        // ডাটা লোড
+        // =========================
+        async function fetchData() {
+            try {
+                const res = await fetch(SCRIPT_URL, {
+                    redirect: "follow"
+                });
+
+                if (!res.ok) {
+                    throw new Error("HTTP Status " + res.status);
+                }
+
+                const data = await res.json();
+                allTransactions = data.transactions || [];
+
+                populateWeekFilter();
+                renderDashboard();
+
+            } catch (error) {
+                console.error("Fetch Error:", error);
+
+                document.getElementById('transactionList').innerHTML = `
+                    <div class="p-5 text-center space-y-1.5">
+                        <p class="text-rose-600 font-bold text-sm">ডাটা লোড করতে সমস্যা হচ্ছে!</p>
+                        <p class="text-xs text-gray-500">
+                            Google Apps Script-এ Access Permission 'Anyone' করা আছে কিনা চেক করুন।
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        // =========================
+        // সপ্তাহ ফিল্টার
+        // =========================
+        function populateWeekFilter() {
+            const weekSelect = document.getElementById('weekFilter');
+            const currentVal = weekSelect.value;
+
+            const weeks = [
+                ...new Set(allTransactions.map(row => row[0]).filter(Boolean))
+            ];
+
+            weekSelect.innerHTML = `<option value="ALL">সকল সপ্তাহ</option>`;
+
+            weeks.forEach(w => {
+                weekSelect.innerHTML += `<option value="${w}">সপ্তাহ ${w}</option>`;
+            });
+
+            if (currentVal && currentVal !== "ALL" && weeks.includes(currentVal)) {
+                weekSelect.value = currentVal;
+            } else if (weeks.length > 0) {
+                weekSelect.value = weeks[weeks.length - 1];
+            }
+        }
+
+        // =========================
+        // ড্যাশবোর্ড রেন্ডার
+        // =========================
+        function renderDashboard() {
+            const selectedWeek = document.getElementById('weekFilter').value;
+            const selectedMember = document.getElementById('memberFilter').value;
+
+            const weekTx = selectedWeek === "ALL"
+                ? allTransactions
+                : allTransactions.filter(row => String(row[0]) === String(selectedWeek));
+
+            // তারিখ ও বার
+            if (weekTx.length > 0) {
+                const firstDate = parseDateInfo(weekTx[0][1]);
+                const lastDate = parseDateInfo(weekTx[weekTx.length - 1][1]);
+
+                document.getElementById('dateRangeBadge').innerText =
+                    `${firstDate.formatted} হতে ${lastDate.formatted}`;
+
+                document.getElementById('dayRangeText').innerText =
+                    `${firstDate.dayName} - ${lastDate.dayName}`;
+            } else {
+                document.getElementById('dateRangeBadge').innerText = "তারিখ নেই";
+                document.getElementById('dayRangeText').innerText = "-";
+            }
+
+            // হিসাব ক্যালকুলেশন
+            let totalExp = 0;
+            let totalDep = 0;
+
+            let memberStats = {};
+            MEMBERS.forEach(m => memberStats[m] = { deposit: 0, expense: 0 });
+
+            weekTx.forEach(row => {
+                const member = row[2];
+                const dep = parseFloat(row[4]) || 0;
+                const exp = parseFloat(row[5]) || 0;
+
+                totalDep += dep;
+                totalExp += exp;
+
+                if (memberStats[member]) {
+                    memberStats[member].deposit += dep;
+                    memberStats[member].expense += exp;
+                }
+            });
+
+            const perHead = totalExp / MEMBERS.length;
+
+            document.getElementById('totalExpense').innerText = totalExp.toFixed(2);
+            document.getElementById('totalDeposit').innerText = totalDep.toFixed(2);
+            document.getElementById('perHead').innerText = perHead.toFixed(2);
+            document.getElementById('perHeadSmall').innerText = perHead.toFixed(2);
+
+            // সদস্যদের ব্যক্তিগত কার্ড
+            const cardsContainer = document.getElementById('memberCardsContainer');
+            cardsContainer.innerHTML = "";
+
+            MEMBERS.forEach(m => {
+                const stat = memberStats[m];
+                const myTotalPaid = stat.deposit + stat.expense;
+                const balance = myTotalPaid - perHead;
+                const isReceive = balance >= 0;
+
+                cardsContainer.innerHTML += `
+                    <div class="bg-white rounded-xl p-3.5 shadow-sm border ${isReceive ? 'border-emerald-200' : 'border-rose-200'}">
+                        <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
+                            <span class="font-bold text-base text-gray-800">${m}</span>
+
+                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full ${isReceive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                                ${isReceive ? 'টাকা পাবে' : 'টাকা দিবে'}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-1 text-xs text-gray-600 mb-2.5">
+                            <div>নিজে বাজার করেছে: <b class="text-gray-800">${stat.expense.toFixed(2)}</b></div>
+                            <div class="text-right">জমা: <b class="text-gray-800">${stat.deposit.toFixed(2)}</b></div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-2 border-t border-dashed border-gray-200">
+                            <span class="text-xs font-medium text-gray-500">
+                                ${isReceive ? 'মোট পাবে:' : 'মোট দিবে:'}
+                            </span>
+
+                            <span class="text-lg font-extrabold ${isReceive ? 'text-emerald-600' : 'text-rose-600'}">
+                                ${Math.abs(balance).toFixed(2)}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // বিস্তারিত তালিকা
+            const filteredTx = selectedMember === "ALL"
+                ? weekTx
+                : weekTx.filter(row => row[2] === selectedMember);
+
+            const txList = document.getElementById('transactionList');
+
+            if (filteredTx.length === 0) {
+                txList.innerHTML = `
+                    <p class="text-center py-6 text-gray-400 text-sm">
+                        কোনো লেনদেন পাওয়া যায়নি
+                    </p>
+                `;
+                return;
+            }
+
+            txList.innerHTML = "";
+
+            filteredTx.slice().reverse().forEach(row => {
+                const [week, date, member, desc, dep, exp] = row;
+                const dInfo = parseDateInfo(date);
+
+                const hasExp = parseFloat(exp) > 0;
+                const hasDep = parseFloat(dep) > 0;
+
+                txList.innerHTML += `
+                    <div class="p-3.5 flex justify-between items-center hover:bg-gray-50 gap-3">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="bg-teal-100 text-teal-900 text-xs font-bold px-2 py-0.5 rounded">
+                                    ${member}
+                                </span>
+
+                                <span class="text-xs text-gray-500">
+                                    ${dInfo.formatted} (${dInfo.dayName})
+                                </span>
+                            </div>
+
+                            <p class="text-sm text-gray-800 font-medium mt-1 break-words">
+                                ${desc}
+                            </p>
+                        </div>
+
+                        <div class="text-right shrink-0">
+                            ${hasExp ? `
+                                <p class="text-sm font-bold text-rose-600">${parseFloat(exp).toFixed(2)}</p>
+                                <span class="text-[10px] text-gray-400">বাজার খরচ</span>
+                            ` : ''}
+
+                            ${hasDep ? `
+                                <p class="text-sm font-bold text-emerald-600">+${parseFloat(dep).toFixed(2)}</p>
+                                <span class="text-[10px] text-gray-400">জমা</span>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // চালু
+        updateCountdown();
+        fetchData();
+    </script>
+</body>
+</html>
